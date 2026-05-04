@@ -1,0 +1,13 @@
+{
+  "seed": 42,
+  "teacher_path": "checkpoints/sleep_baseline_full.pth",
+  "pruning_ratios": [0.5, 0.7],
+  "kd_temperature": 4.0,
+  "kd_alpha": 0.7,
+  "kd_lr": 0.00005,
+  "kd_epochs": 100,
+  "kd_early_stopping_patience": 15,
+  "quantization_calibration_samples": 150,
+  "quantization_target": "INT8",
+  "max_accuracy_drop_pct": 1.0
+}

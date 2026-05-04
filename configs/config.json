@@ -1,0 +1,25 @@
+{
+  "seed": 42,
+  "model": "SleepApneaCNN",
+  "task": "binary_apnea",
+  "input_shape": [
+    1,
+    3000
+  ],
+  "num_classes": 2,
+  "optimizer": "Adam",
+  "lr": 0.0001,
+  "batch_size": 32,
+  "epochs": 200,
+  "early_stopping_patience": 20,
+  "loss": "weighted_cross_entropy",
+  "class_weights": {
+    "0": 0.6021,
+    "1": 2.9481
+  },
+  "scheduler": "ReduceLROnPlateau",
+  "scheduler_factor": 0.5,
+  "scheduler_patience": 10,
+  "device": "mps",
+  "n_params": 272802
+}

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip show *)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('scripts/01_prepare_data.py'\\).read\\(\\)\\)\")",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('scripts/01_prepare_data.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "Bash(python3 scripts/01_prepare_data.py)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('scripts/02_train_baseline.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "Bash(python3 scripts/02_train_baseline.py)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 scripts/03_pruning_kd.py)"
+    ]
+  }
+}
