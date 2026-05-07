@@ -226,7 +226,7 @@ def main() -> None:
         "cpu"
     )
     print(f"Device: {device}")
-    print(f"T={T_KD} | α={ALPHA} | lr={LR} | epochs={EPOCHS} | patience={PATIENCE}")
+    print(f"T={T_KD} | alpha={ALPHA} | lr={LR} | epochs={EPOCHS} | patience={PATIENCE}")
 
     # ---- Datos ----
     train_loader = DataLoader(ApneaDataset("train"), batch_size=BATCH,
@@ -262,7 +262,7 @@ def main() -> None:
 
         print(f"\n{'='*62}")
         print(f"Variante: {variant}  (prune={prune_ratio*100:.0f}%  "
-              f"KD={'sí' if use_kd else 'no'})")
+              f"KD={'si' if use_kd else 'no'})")
         print(f"{'='*62}")
 
         # Calcular máscaras solo una vez por ratio
@@ -270,7 +270,7 @@ def main() -> None:
             cached_masks[ratio_tag] = compute_prune_masks(teacher, prune_ratio)
         masks = cached_masks[ratio_tag]
 
-        print(f"  Filtros conservados → "
+        print(f"  Filtros conservados -> "
               f"conv1: {len(masks['conv1'])}/{teacher.features[0].weight.shape[0]}  "
               f"conv2: {len(masks['conv2'])}/{teacher.features[5].weight.shape[0]}  "
               f"conv3: {len(masks['conv3'])}/{teacher.features[10].weight.shape[0]}")

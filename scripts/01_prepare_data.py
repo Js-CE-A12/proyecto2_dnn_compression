@@ -47,10 +47,12 @@ EPOCH_SAMP  = FS_TARGET * EPOCH_SEC  # 3000 muestras
 ALL_SUBJECTS = [2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
                 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
 
-# Partición por sujeto (18 / 4 / 3)
+# Partición por sujeto (19 / 3 / 3)
+# Sujeto 025 (83% apnea) se mueve a train para no sesgar la validación.
+# Val queda con sujetos 22/23/24 (5%, 29%, 24% apnea) → representativo del test.
 SPLIT = {
-    "train": [2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21],
-    "val":   [22, 23, 24, 25],
+    "train": [2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 25],
+    "val":   [22, 23, 24],
     "test":  [26, 27, 28],
 }
 
