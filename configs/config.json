@@ -14,12 +14,12 @@
   "early_stopping_patience": 20,
   "loss": "weighted_cross_entropy",
   "class_weights": {
-    "0": 0.6021,
-    "1": 2.9481
+    "0": 0.6245,
+    "1": 2.508
   },
   "scheduler": "ReduceLROnPlateau",
   "scheduler_factor": 0.5,
   "scheduler_patience": 10,
-  "device": "mps",
+  "device": "cuda",
   "n_params": 272802
 }
