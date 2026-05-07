@@ -39,7 +39,7 @@ SEED      = 42
 LR        = 1e-4
 BATCH     = 32
 EPOCHS    = 200
-PATIENCE  = 20
+PATIENCE  = 30
 
 torch.manual_seed(SEED)
 np.random.seed(SEED)
@@ -49,16 +49,39 @@ np.random.seed(SEED)
 # Dataset
 # ---------------------------------------------------------------------------
 
+def augment(x: np.ndarray) -> np.ndarray:
+    """Augmentacion online para señales EEG (1, 3000). Solo en training."""
+    x = x.copy()
+    # Ruido gaussiano
+    if np.random.rand() < 0.5:
+        x += np.random.normal(0, 0.05, x.shape).astype(np.float32)
+    # Escala de amplitud
+    if np.random.rand() < 0.5:
+        x *= np.random.uniform(0.8, 1.2)
+    # Inversion de polaridad
+    if np.random.rand() < 0.3:
+        x *= -1
+    # Time shift ±100 muestras (~1 segundo)
+    if np.random.rand() < 0.5:
+        shift = np.random.randint(-100, 101)
+        x = np.roll(x, shift, axis=1)
+    return x
+
+
 class ApneaDataset(Dataset):
-    def __init__(self, split: str) -> None:
+    def __init__(self, split: str, augment_data: bool = False) -> None:
         self.X = np.load(PROCESSED_DIR / f"X_{split}.npy")           # (N, 1, 3000)
         self.y = np.load(PROCESSED_DIR / f"y_apnea_{split}.npy").astype(np.int64)
+        self.augment_data = augment_data
 
     def __len__(self) -> int:
         return len(self.X)
 
     def __getitem__(self, idx: int):
-        return torch.from_numpy(self.X[idx]), int(self.y[idx])
+        x = self.X[idx]
+        if self.augment_data:
+            x = augment(x)
+        return torch.from_numpy(x), int(self.y[idx])
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +165,7 @@ def main() -> None:
     print(f"Device: {device}")
 
     # ---- Data ----
-    train_ds = ApneaDataset("train")
+    train_ds = ApneaDataset("train", augment_data=True)
     val_ds   = ApneaDataset("val")
     test_ds  = ApneaDataset("test")
     train_loader = DataLoader(train_ds, batch_size=BATCH, shuffle=True,  num_workers=0)
