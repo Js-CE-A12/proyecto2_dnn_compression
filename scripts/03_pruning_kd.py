@@ -63,8 +63,24 @@ VARIANTS = [
 
 
 # ---------------------------------------------------------------------------
-# Dataset (mismo que Fase 2)
+# Dataset
 # ---------------------------------------------------------------------------
+
+ISRUC_DIR = PROCESSED_DIR / "isruc_subjects"
+
+
+def load_isruc_test():
+    """Carga todos los sujetos ISRUC como test set cross-dataset."""
+    Xs, ys = [], []
+    for npz in sorted(ISRUC_DIR.glob("subj_*.npz"),
+                      key=lambda p: int(p.stem.split("_")[1])):
+        try:
+            d = np.load(str(npz))
+            Xs.append(d["X"]); ys.append(d["y_apnea"].astype(np.int64))
+        except Exception:
+            pass
+    return np.concatenate(Xs), np.concatenate(ys)
+
 
 class ApneaDataset(Dataset):
     def __init__(self, split: str) -> None:
@@ -233,8 +249,13 @@ def main() -> None:
                               shuffle=True,  num_workers=0)
     val_loader   = DataLoader(ApneaDataset("val"),   batch_size=BATCH,
                               shuffle=False, num_workers=0)
-    test_loader  = DataLoader(ApneaDataset("test"),  batch_size=BATCH,
-                              shuffle=False, num_workers=0)
+    # Test = ISRUC (cross-dataset)
+    x_isruc, y_isruc = load_isruc_test()
+    print(f"  ISRUC test: {len(x_isruc)} epochs | apnea={y_isruc.mean():.1%}")
+    from torch.utils.data import TensorDataset
+    isruc_ds = TensorDataset(torch.from_numpy(x_isruc),
+                             torch.from_numpy(y_isruc))
+    test_loader = DataLoader(isruc_ds, batch_size=BATCH, shuffle=False, num_workers=0)
 
     # ---- Pesos de clase ----
     with open(PROCESSED_DIR / "class_weights_apnea.json") as f:
