@@ -220,8 +220,17 @@ def main() -> None:
 
     x_val  = np.load(PROCESSED_DIR / "X_val.npy")
     y_val  = np.load(PROCESSED_DIR / "y_apnea_val.npy")
-    x_test = np.load(PROCESSED_DIR / "X_test.npy")
-    y_test = np.load(PROCESSED_DIR / "y_apnea_test.npy")
+
+    # Test = ISRUC (cross-dataset evaluation)
+    ISRUC_DIR = PROCESSED_DIR / "isruc_subjects"
+    Xs, ys = [], []
+    for npz in sorted(ISRUC_DIR.glob("subj_*.npz"),
+                      key=lambda p: int(p.stem.split("_")[1])):
+        d = np.load(str(npz))
+        Xs.append(d["X"]); ys.append(d["y_apnea"])
+    x_test = np.concatenate(Xs).astype(np.float32)
+    y_test = np.concatenate(ys)
+    print(f"Cross-dataset test (ISRUC): {len(x_test)} epochs | apnea={y_test.mean():.1%}")
 
     all_results = {}
 
