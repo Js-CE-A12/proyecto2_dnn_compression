@@ -152,6 +152,3 @@ Después de correr todos los scripts, los resultados estarán en `results/`:
 
 ---
 
-## Uso de IA
-
-Este proyecto utilizó **Claude Code (Anthropic)** para generación y depuración de scripts Python. Todo el código fue revisado y ejecutado por el equipo.
