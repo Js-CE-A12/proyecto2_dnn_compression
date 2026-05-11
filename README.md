@@ -3,7 +3,7 @@
 Universidad Interamericana PR – Bayamón | Curso de Ciencia de Datos
 
 ## Equipo
-- Eli Jaaziel Ayala Ortiz — Y00622025
+- Eli Jaaziel Ayala Ortiz — Y00622025 
 - Edwin Román Maldonado — R00587066
 
 ## Descripción
