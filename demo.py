@@ -23,10 +23,12 @@ from sklearn.metrics import (
 )
 
 # ---------------------------------------------------------------------------
-CKPT_DIR      = Path("checkpoints")
-PROCESSED_DIR = Path("data/processed")
+# Rutas relativas al script (funciona desde cualquier directorio)
+ROOT          = Path(__file__).resolve().parent
+CKPT_DIR      = ROOT / "checkpoints"
+PROCESSED_DIR = ROOT / "data" / "processed"
 ISRUC_DIR     = PROCESSED_DIR / "isruc_subjects"
-RESULTS_DIR   = Path("results")
+RESULTS_DIR   = ROOT / "results"
 WARMUP        = 20
 RUNS          = 200
 THRESHOLD_PCT = 0.5          # tolerancia maxima FP32 vs INT8 (%)
