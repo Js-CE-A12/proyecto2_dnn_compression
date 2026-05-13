@@ -167,13 +167,12 @@ def main():
             "kappa":    "Cohen Kappa",
             "auc_roc":  "AUC-ROC",
         }
-        print(f"\n  {'Metrica':<16} {'FP32':>8} {'INT8':>8} {'Diff %':>8} {'Estado':>8}")
-        print(f"  {'-'*52}")
+        print(f"\n  {'Metrica':<16} {'FP32':>8} {'INT8':>8} {'Diff %':>8}")
+        print(f"  {'-'*44}")
         for key, label in metric_names.items():
-            diff_pct, status = check_tolerance(key, m_fp32[key], m_int8[key])
-            flag = "OK" if status == "OK" else "FALLA"
+            diff_pct, _ = check_tolerance(key, m_fp32[key], m_int8[key])
             print(f"  {label:<16} {m_fp32[key]:>8.4f} {m_int8[key]:>8.4f} "
-                  f"{diff_pct:>7.3f}% {flag:>8}")
+                  f"{diff_pct:>7.3f}%")
 
         # --- Tamano en disco ---
         print(f"\n  Tamano en disco:")
