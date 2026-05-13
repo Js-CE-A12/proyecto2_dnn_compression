@@ -40,65 +40,139 @@ def pareto_frontier(points: list) -> list:
     return [i for i, d in enumerate(dominated) if not d]
 
 
-def make_pareto_plot(ev: dict) -> None:
-    configs = [
-        # (label, model, quant, color, marker)
-        ("Baseline FP32",        "baseline",  "fp32", "#1f77b4", "o"),
-        ("Baseline INT8",        "baseline",  "int8", "#aec7e8", "s"),
-        ("p050 nokd FP32",       "p050_nokd", "fp32", "#ff7f0e", "o"),
-        ("p050 nokd INT8",       "p050_nokd", "int8", "#ffbb78", "s"),
-        ("p050 kd FP32",         "p050_kd",   "fp32", "#2ca02c", "o"),
-        ("p050 kd INT8",         "p050_kd",   "int8", "#98df8a", "s"),
-        ("p070 nokd FP32",       "p070_nokd", "fp32", "#d62728", "o"),
-        ("p070 nokd INT8",       "p070_nokd", "int8", "#ff9896", "s"),
-        ("p070 kd FP32",         "p070_kd",   "fp32", "#9467bd", "o"),
-        ("p070 kd INT8",         "p070_kd",   "int8", "#c5b0d5", "s"),
-    ]
+def make_pareto_plot(ablation: dict) -> None:
+    eids   = ["E0", "E1", "E2", "E3", "E4", "E5"]
+    lats   = [ablation[e]["lat_ms"]          for e in eids]
+    aucs   = [ablation[e]["test"]["auc_roc"] for e in eids]
+    kbs    = [ablation[e]["disk_kb"]         for e in eids]
+    labels = [ablation[e]["label"]           for e in eids]
+    quants = [ablation[e]["quantized"]       for e in eids]
 
-    lats, aucs, labels, colors, markers = [], [], [], [], []
-    for label, model, quant, color, marker in configs:
-        lats.append(ev[model]["latency"][quant]["mean_ms"])
-        aucs.append(ev[model]["metrics"][quant]["test"]["auc_roc"])
-        labels.append(label)
-        colors.append(color)
-        markers.append(marker)
+    COLORS  = ["#1565C0", "#E65100", "#5C6BC0", "#BF360C", "#2E7D32", "#1B5E20"]
+    MARKERS = ["o" if not q else "s" for q in quants]
+    max_kb  = max(kbs)
+    sizes   = [180 + 650 * (k / max_kb) for k in kbs]
 
-    points = list(zip(lats, aucs))
+    points     = list(zip(lats, aucs))
     pareto_idx = pareto_frontier(points)
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # Two subplots: full view (left) + zoom on dense cluster (right)
+    fig, (ax, axz) = plt.subplots(1, 2, figsize=(14, 6),
+                                   gridspec_kw={"width_ratios": [3, 2]})
+    fig.patch.set_facecolor("#FAFAFA")
 
-    for i, (lat, auc, lbl, col, mrk) in enumerate(
-            zip(lats, aucs, labels, colors, markers)):
-        is_pareto = i in pareto_idx
-        ax.scatter(lat, auc, c=col, marker=mrk,
-                   s=120 if is_pareto else 70,
-                   zorder=3,
-                   edgecolors="black" if is_pareto else "none",
-                   linewidths=1.5)
-        ax.annotate(lbl, (lat, auc),
-                    textcoords="offset points", xytext=(5, 3),
-                    fontsize=7, color=col)
+    for ax_ in (ax, axz):
+        ax_.set_facecolor("#F8F8F8")
+        ax_.grid(True, alpha=0.3, linestyle="--")
 
-    # Conectar puntos Pareto
+    # ---- Draw points on both axes ----
+    for i, eid in enumerate(eids):
+        is_p = i in pareto_idx
+        kw   = dict(c=COLORS[i], marker=MARKERS[i], s=sizes[i],
+                    zorder=4, alpha=0.88,
+                    edgecolors="black" if is_p else "#888",
+                    linewidths=2.5 if is_p else 0.8)
+        ax.scatter(lats[i],  aucs[i],  **kw)
+        axz.scatter(lats[i], aucs[i],  **kw)
+
+    # Pareto line on both
     par_pts = sorted([(lats[i], aucs[i]) for i in pareto_idx])
     if par_pts:
         px, py = zip(*par_pts)
-        ax.plot(px, py, "k--", linewidth=1, alpha=0.5, label="Pareto frontier")
+        for ax_ in (ax, axz):
+            ax_.plot(px, py, "k--", lw=1.3, alpha=0.4, zorder=2)
 
-    fp32_patch = mpatches.Patch(color="gray", label="FP32 (circulo)")
-    int8_patch = mpatches.Patch(color="lightgray", label="INT8 (cuadrado)")
-    pareto_patch = mpatches.Patch(color="black", label="Frontera Pareto")
-    ax.legend(handles=[fp32_patch, int8_patch, pareto_patch], fontsize=8)
+    # ---- Annotations on full plot ----
+    ann_full = {
+        # eid: (offset_pts, ha, va)
+        "E0": ((-10, -20), "center", "top"),
+        "E1": ((-14, +16), "right",  "bottom"),
+        "E2": ((+12, -16), "left",   "top"),
+        "E3": ((-14, -16), "right",  "top"),
+        "E4": ((+12, +14), "left",   "bottom"),
+        "E5": ((-14, +20), "right",  "bottom"),
+    }
+    for i, eid in enumerate(eids):
+        ox, oy = ann_full[eid][0]
+        ha, va = ann_full[eid][1], ann_full[eid][2]
+        is_p   = i in pareto_idx
+        tag    = f"{eid} ★" if eid == "E5" else eid
+        bbox   = dict(boxstyle="round,pad=0.25", fc="#C8E6C9",
+                      ec="#2E7D32", lw=1.4) if eid == "E5" else None
+        ax.annotate(
+            f"{tag}\n{labels[i]}\n{kbs[i]:.0f} KB",
+            xy=(lats[i], aucs[i]),
+            xytext=(ox, oy), textcoords="offset points",
+            ha=ha, va=va, fontsize=8,
+            fontweight="bold" if is_p else "normal",
+            color=COLORS[i],
+            bbox=bbox,
+            arrowprops=dict(arrowstyle="-|>", color=COLORS[i],
+                            lw=1.1, mutation_scale=9),
+        )
 
-    ax.set_xlabel("Latencia media por muestra (ms) - CPU", fontsize=11)
-    ax.set_ylabel("AUC-ROC en test", fontsize=11)
-    ax.set_title("Pareto: AUC-ROC vs Latencia — UCDDB Apnea Detection", fontsize=12)
-    ax.grid(True, alpha=0.3)
+    # ---- Annotations on zoom plot (only E1-E5 visible) ----
+    ann_zoom = {
+        "E1": ((+10, +14), "left",  "bottom"),
+        "E2": ((+10, -14), "left",  "top"),
+        "E3": ((-10, -16), "right", "top"),
+        "E4": ((+10, +14), "left",  "bottom"),
+        "E5": ((-10, +18), "right", "bottom"),
+    }
+    for i, eid in enumerate(eids):
+        if eid not in ann_zoom:
+            continue
+        ox, oy = ann_zoom[eid][0]
+        ha, va = ann_zoom[eid][1], ann_zoom[eid][2]
+        is_p   = i in pareto_idx
+        tag    = f"{eid} ★" if eid == "E5" else eid
+        bbox   = dict(boxstyle="round,pad=0.25", fc="#C8E6C9",
+                      ec="#2E7D32", lw=1.4) if eid == "E5" else None
+        axz.annotate(
+            f"{tag}  {lats[i]:.3f} ms\nAUC {aucs[i]:.4f}",
+            xy=(lats[i], aucs[i]),
+            xytext=(ox, oy), textcoords="offset points",
+            ha=ha, va=va, fontsize=8.5,
+            fontweight="bold" if is_p else "normal",
+            color=COLORS[i], bbox=bbox,
+            arrowprops=dict(arrowstyle="-|>", color=COLORS[i],
+                            lw=1.1, mutation_scale=9),
+        )
 
-    out = FIGURES_DIR / "pareto.png"
+    # ---- Axis limits ----
+    ax.set_xlim(0.07, 0.46)
+    ax.set_ylim(0.608, 0.638)
+    axz.set_xlim(0.090, 0.215)
+    axz.set_ylim(0.626, 0.635)
+
+    # ---- Labels & titles ----
+    ax.set_xlabel("Latencia media (ms) — CPU, 1 hilo", fontsize=11)
+    ax.set_ylabel("AUC-ROC en test cross-dataset (ISRUC)", fontsize=11)
+    ax.set_title("Vista completa (E0–E5)\nBurbuja proporcional al tamano en disco",
+                 fontsize=10)
+
+    axz.set_xlabel("Latencia media (ms)", fontsize=11)
+    axz.set_ylabel("AUC-ROC", fontsize=11)
+    axz.set_title("Zoom — cluster comprimido (E1–E5)", fontsize=10)
+
+    # ---- Shared legend ----
+    handles = [
+        plt.Line2D([0],[0], marker="o", color="w", markerfacecolor="#555",
+                   markersize=9, label="FP32"),
+        plt.Line2D([0],[0], marker="s", color="w", markerfacecolor="#555",
+                   markersize=9, label="INT8"),
+        plt.Line2D([0],[0], color="k", ls="--", lw=1.3, label="Frontera Pareto"),
+        mpatches.Patch(fc="#C8E6C9", ec="#2E7D32", label="Optimo (E5 ★)"),
+    ]
+    fig.legend(handles=handles, fontsize=9, loc="lower center",
+               ncol=4, framealpha=0.9, bbox_to_anchor=(0.5, -0.02))
+
+    fig.suptitle("Curva de Pareto — Compresion DNN para Deteccion de Apnea EEG",
+                 fontsize=13, fontweight="bold", y=1.01)
+
     fig.tight_layout()
-    fig.savefig(out, dpi=150)
+    out = FIGURES_DIR / "pareto.png"
+    fig.savefig(out, dpi=160, bbox_inches="tight")
     plt.close(fig)
     print(f"  Pareto plot guardado: {out}")
 
@@ -170,7 +244,7 @@ def main() -> None:
     with open(EVAL_FILE)     as f: ev = json.load(f)
     with open(ABLATION_FILE) as f: ablation = json.load(f)
 
-    make_pareto_plot(ev)
+    make_pareto_plot(ablation)
     make_ablation_table(ablation)
     print("Fase 7 completada.")
 
